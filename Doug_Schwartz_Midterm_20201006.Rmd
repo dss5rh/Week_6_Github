@@ -1,0 +1,273 @@
+---
+title: "Creating Interactive Maps with leaflet"
+author: "Cam Bailey, Abby Newbury, Shivani Das, and Doug Schwartz"
+date: "10/6/2020"
+output:
+  html_document:
+    toc: TRUE
+    theme: spacelab
+    toc_float: TRUE
+    toc_collapsed: TRUE
+editor_options:
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE, echo = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, cache = FALSE)
+```
+
+```{r, out.width='100%', fig.align='center', fig.cap="a JavaScript library for interactive maps"}
+knitr::include_graphics('https://leafletjs.com/docs/images/logo.png')
+```
+
+### I. Package Overview{.tabset}
+
+Leaflet - an open-source JavaScript library for mobile-friendly interactive maps - offers a simple way to create elegant, interactive maps using its R package, leaflet. As the company's own [website](https://leafletjs.com/) puts it, "Leaflet doesn't try to do everything for everyone. Instead it focuses on making the basic things work perfectly."
+
+
+#### 1. What problems does Leaflet solve?
+
+As stated on Leaflet's  [website](https://leafletjs.com/), "Leaflet is designed with simplicity, performance and usability in mind." Leaflet was primarily created for web development and has truly revolutionized the way web designers create maps. It provides a free open-source method for creating interactive maps and offers an alternative to proprietary packages like ArcGIS Online. While unlocking the full range of Leaflet's applications requires some additional knowledge of JavaScript and some web development programming languages like HTML or CSS, we'll be focusing on making use of its R package, leaflet.
+
+Leaflet's associated R package, leaflet, allows us to create interactive maps just by using R code and the package takes care of rendering the map to a webpage for you. As we will discuss in more detail in the next section, leaflet allows you to create the following:
+
+Basemaps with a plethora of features:
+
+*   **Markers**
+*   **Popups**
+*   **Vector layers:** *polylines, polygons, circles, rectangles*
+*   **Image overlays**
+*   **GeoJSON**
+
+We'll also introduce a number of extensions to the leaflet package that allow us to do even more...
+
+#### 2. Usage - Getting Started
+
+Installing leaflet is as simple as any other R package:
+
+```{r, include=TRUE, echo=TRUE, eval=TRUE}
+# Install leaflet and load the library
+#install.packages("leaflet")
+library(leaflet)
+```
+
+Note that the above lines of code will automatically install leaflet's **dependencies**, specifically: *‘png’*, *‘raster’*, *‘sp’*, *‘leaflet.providers’*, and *'raster'*.
+
+You will also want to add the following packages as we'll be relying on several of them in later sections:
+
+```{r, include=TRUE, echo=TRUE, eval=TRUE}
+# Install related packages and load its library
+library(tidyverse)
+#install.packages("knitr")
+library(knitr)
+#install.packages("ggthemes")
+library(ggthemes)
+#install.packages('plotly')
+library(plotly)
+#install.packages('ggmap')
+library(ggmap)
+#install.packages('pander')
+library(pander)
+#install.packages('sf')
+library(sf)
+#install.packages('spData')
+library(spData)
+#install.packages('tmap')
+library(tmap)
+#install.packages('jsonlite')
+library(jsonlite)
+```
+
+
+#### 3. Version History
+
+Leaflet was originally created by [Vladimir Agafonkin](https://agafonkin.com/), but is now developed by a big community of contributors. Since its creation there have been regular releases of updated versions of Leaflet, and since its creation in 2015, there have been corresponding updates for R’s  leaflet package. The most current version, **leaflet v2.0.3**, was released November 22, 2019. For more information about previous versions of leaflet and the improvements that have been made across versions, check out the links below:
+
+*   [v2.0.3](https://www.rdocumentation.org/packages/leaflet/versions/2.0.3) - Published: Nov. 22, 2019
+*   [v2.0.2](https://www.rdocumentation.org/packages/leaflet/versions/2.0.2) - Published: Jun. 27, 2018
+*   [v2.0.1](https://www.rdocumentation.org/packages/leaflet/versions/2.0.1) - Published: Jun. 4, 2018
+*   [v2.0.0](https://www.rdocumentation.org/packages/leaflet/versions/2.0.0) - Published: Apr. 20, 2018
+*   [v1.1.0](https://www.rdocumentation.org/packages/leaflet/versions/1.1.0) - Published: Feb 21, 2017
+*   [v1.0.1](https://www.rdocumentation.org/packages/leaflet/versions/1.0.1) - Published: Feb 27, 2016
+*   [v1.0.0](https://www.rdocumentation.org/packages/leaflet/versions/1.0.0) - Published: Jun 27, 2015
+
+### II. Examples of Usage
+
+#### II.A. Quick Map{.tabset}
+First, the map instance must be created and stored. This action is uncommon to R, being a functional language, but must be done separately as piping other function calls can't be done until the map is instantiated. Tiles are then added to the map, the view determined by longitude and latitude, as well as an initial marker to identify the Rotunda. This is a basic marker, many different marker options are available for use ranging in color, shape, and opacity.
+
+##### 1. Make the Map
+First initialize your map via the addTiles command, this calls the default, OpenStreetMap map tiles. Then enter the coordinates of your location of interest and choose the appropriate level of zoom.
+
+```{r, include=TRUE, eval=TRUE, echo = TRUE}
+map <- leaflet() %>%
+  addTiles() %>%  
+  setView(lng = -78.484590, lat = 38.030678, zoom = 13)
+# Let's check it out:
+map
+```
+
+
+##### 2. Add Layers and Change View
+You can add layers such as streetview and satellite view pulled from different web providers. 
+
+```{r, include=TRUE, eval=TRUE, echo = TRUE}
+map <- map %>%
+      addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
+      addLayersControl(baseGroups = c("Street View", "Satellite"))
+
+# Let's check it out:
+map
+```
+
+##### 3. Add a Marker Popup
+Once you've selected your location you can add a marker using addMarkers. Add some information to your marker using the popup option.
+```{r, include=TRUE, eval=TRUE, echo = TRUE}
+
+PopUpInfo <- paste(sep = "<br/>",
+  "<b><a href='https://rotunda.virginia.edu/'>The Rotunda</a></b>",
+  "1826 University Ave",
+  "Charlottesville, VA 22904"
+)
+
+m <- map %>%
+  addMarkers(map, lng=-78.503480, lat=38.035498, popup = PopUpInfo)
+# Let's check it out:
+m
+```
+
+##### 4. Add some Shapes
+Add some shapes and lines.
+```{r, include=TRUE, eval=TRUE, echo = TRUE}
+
+# Here's a fun rectangle
+m <- m %>%
+  addRectangles(
+    lng1=-78.513480, lat1=38.045498,
+    lng2=-78.493480, lat2=38.025498,
+    fillColor = "red"
+  ) %>%
+
+# Here's a fun circle
+ addCircles(lng = -78.503480, lat = 38.035498, weight = 10, radius =1000, fillColor = "blue")
+# Let's check it out:
+m
+```
+
+
+#### II.B GeoJSON and TopoJSON{.tabset}
+
+This map integrates the original map we set up and takes in geoJSON list data. Here, geoJSON data is pulled from an archive that shows train tracks within Charlottesville, VA on a map. The original map does show subtle train track markers, but this function can take geographic data and apply it to the map with whatever visuals you require. This enhancement allows for easier, more fluid representation of geospatial data in an R document.
+
+While not included here, the TopoJSON function is identical to GeoJSON, however using data that is instead stored as a topoJSON list.
+
+##### 1. geoJSON Map
+```{r, include=TRUE, eval=TRUE, echo = TRUE}
+map.geoJSON = map
+geoJSON.trains <- "https://opendata.arcgis.com/datasets/8e1338f32fde4037b3898d10d4eac111_56.geojson"
+
+trains <- readLines(geoJSON.trains, warn = FALSE) %>%
+  paste(collapse = "\n") %>%
+  fromJSON(simplifyVector = FALSE)
+
+map.geoJSON = addGeoJSON(map.geoJSON, trains, layerId = NULL, group = NULL, stroke = TRUE,
+           color = "green", weight = 8, opacity = 1, fill = TRUE, fillColor = "green",
+           fillOpacity = 1, dashArray = NULL, smoothFactor = 1, noClip = FALSE, 
+           options = pathOptions(), data = getMapData(map.geoJSON)) 
+map.geoJSON
+```
+
+##### 2. Add a Legend
+```{r, include=TRUE, eval=TRUE, echo = TRUE}
+# Adding a legend for our train tracks
+map.geoJSON = addLegend(map.geoJSON, position = "topright", className = "info legend", opacity = 1, 
+            colors = "green", labels = "Train Tracks", data = getMapData(map.geoJSON))
+map.geoJSON
+```
+
+
+
+### III. Similar Packages
+
+While leaflet offers many spatial visualization options for its users, other packages do exist! The two packages that will be compared to leaflet are ggmap and tmap. 
+
+#### ggmap
+
+The ggmaps package is described as "a collection of functions to visualize spatial data and models on top of static maps from various online sources." It was created by David Kahle and Hadley Wickham. The current version is Version 3.0.0 and a full description of the package can be found [here](https://cran.r-project.org/web/packages/ggmap/ggmap.pdf).
+
+```{r, include=FALSE}
+ggmap_table2 <- data.frame(Similarities = "* Visualization of spatial data\n * Layered format (+ vs. %)\n * Allows for tiled basemaps from different services such as OpenStreetMaps and Stamen Maps",
+  Differences = "* ggmap is a ggplot extension so users familiar with ggplot will have an easy transition\n * Not very interactive, gganimation can allow for changes of over time of points/coloration but there is no ability to zoom in or move the map via cursor\n * Main use is for creating static maps")
+```
+
+```{r, echo = FALSE}
+pander::pander(ggmap_table2, keep.line.breaks = TRUE, style = 'grid', justify = 'left')
+```
+
+Below is an example of sample ggmap code used to map the same coordinates of Charlottesville as in II. 
+
+```{r, include=TRUE, echo=TRUE, eval=FALSE}
+library(ggmap)
+myLocation <- c(lon = -78.484590, lat = 38.030678)
+myMap <- get_map(location=myLocation,
+          source="stamen", 
+          maptype= "watercolor", 
+          crop=FALSE)
+ggmap(myMap)
+
+
+```
+
+
+#### tmap
+
+The tmap package is described as offering "a flexible, layer-based, and easy to use approach to create thematic maps, such as choropleths and bubble maps". It was created by Martijn Tennekes. The current version is Version 3.2 and a full description of the package can be found [here](https://cran.r-project.org/web/packages/tmap/tmap.pdf).
+
+```{r, include=FALSE}
+tmap_table <- data.frame(Similarities = "* Visualization of spatial data tailored to maps\n * Accepts sf and sp objects\n * Certain modes allow for interactivity\n * Allows for selection of different facets (i.e. population density) to view on the map\n * Layered grammar",
+  Differences = "* Syntax similar to ggplot2\n * Primarily used for static maps\n * No ability to add base layers from services such as Google Maps")
+```
+
+```{r, echo = FALSE}
+pander::pander(tmap_table, keep.line.breaks = TRUE, style = 'grid', justify = 'left')
+```
+
+Below is an example of sample tmap code used to map London boroughs with cycle hire locations. 
+
+```{r, echo=TRUE, eval=TRUE}
+library(sf)
+library(tmap)
+library(spData)  # for dataset
+
+london <- tm_shape(lnd)+
+  tm_fill()+
+  tm_borders()
+
+london_cycle_hire = london + tm_shape(cycle_hire) + tm_dots()
+london_cycle_hire
+```
+
+### IV. Reflection
+
+```{r, include=FALSE}
+reflection_table  <- data.frame(Pros = "* Easily customizable\n * Scalable\n * Free\n * Can be used to model virtually any map\n * Interactive visualizations",
+  Cons = "* Unfamiliar syntax\n * Hard to initially understand\n * Static maps aren’t as good")
+```
+
+
+```{r, echo = FALSE}
+pander::pander(reflection_table, keep.line.breaks = TRUE, style = 'grid', justify = 'left')
+```
+
+Suggestions: Leaflet is a free, diverse package in R that can be utilized to create very aesthetically appealing interactive maps. It has many pros such as being scalable, easily customizable, interactive, and easy to model. However, Leaflet also utilizes its own syntax which can make it hard to initially understand and its static maps aren’t as good in comparison to other plotting tools. We would suggest that users become accustomed to the format of Leaflet and be patient when developing complex maps, since they can sometimes take a while to load.
+
+
+### V. Resources
+  * https://cengel.github.io/R-spatial/mapping.html
+  * https://cran.r-project.org/web/packages/tmap/vignettes/tmap-getstarted.html
+  * https://rpubs.com/polytropos/intro_tmap_leaflet
+  * https://journal.r-project.org/archive/2013-1/kahle-wickham.pdf
+  * https://cran.r-project.org/web/packages/ggmap/index.html
+  * https://www.nceas.ucsb.edu/sites/default/files/2020-04/ggmapCheatsheet.pdf
+  * https://geocompr.robinlovelace.net/adv-map.html#static-maps
+  * https://cran.r-project.org/web/packages/spData/index.html
